@@ -14,11 +14,11 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,6,1,6">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,6,1,6,1,6">
     <item>
      <widget class="QLabel" name="label">
       <property name="text">
-       <string>График 1. Наличие тренда данных.</string>
+       <string>Наличие тренда данных.</string>
       </property>
      </widget>
     </item>
@@ -28,12 +28,22 @@
     <item>
      <widget class="QLabel" name="label_2">
       <property name="text">
-       <string>График 2. Отсутствие тренда данных.</string>
+       <string>Отсутствие тренда данных.</string>
       </property>
      </widget>
     </item>
     <item>
      <widget class="QCustomPlot" name="plot_2"/>
+    </item>
+    <item>
+     <widget class="QLabel" name="label_3">
+      <property name="text">
+       <string>Отклонение скорости звука от расчитанного значения(График красного цвета).</string>
+      </property>
+     </widget>
+    </item>
+    <item>
+     <widget class="QCustomPlot" name="plot_3"/>
     </item>
    </layout>
   </widget>
@@ -43,7 +53,7 @@
      <x>0</x>
      <y>0</y>
      <width>1197</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
   </widget>
@@ -53,7 +63,7 @@
   <customwidget>
    <class>QCustomPlot</class>
    <extends>QFrame</extends>
-   <header>qcustomplot.h</header>
+   <header location="global">qcustomplot.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

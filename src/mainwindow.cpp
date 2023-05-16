@@ -2,7 +2,7 @@
 #include "ui_mainwindow.h"
 #include <iostream>
 #include <QRandomGenerator>
-
+#include <QDebug>
 constexpr size_t N = 1000; //Размер данных
 constexpr double treshold = 0.002; //Порог тренда отношения скоростей
 
@@ -48,6 +48,37 @@ bool estimateDataTrend(const QVector<double>& data) {
     else return false; //Отсутствие тренда данных
 }
 
+QVector<double> filter(QVector<double>& data) //Фильтрация данных
+{
+    const size_t buffer_size{33};
+    QVector<double> filtered_data(data.size());
+    QVector<double> buffer;
+    for(auto i = 0; i < filtered_data.size(); ++i) {
+        std::copy(data.begin()+i, data.begin()+i+buffer_size, std::back_inserter(buffer));
+        auto average = std::accumulate(std::begin(buffer), std::end(buffer), 0.0)/buffer.size();
+        filtered_data[i] = average;
+        buffer.clear();
+    }
+    return filtered_data;
+}
+
+QVector<std::pair<size_t, size_t>> estimateSoundSpeed(QVector<double>& data, double treshold) {
+    size_t state{0}, begin{0};
+    QVector<std::pair<size_t, size_t>> rangesOfAbnormalSoundSpeed;
+    for(auto i = 0; i < data.size(); ++i) {
+        if(state == 1 && std::abs(data[i]) < treshold) {
+            rangesOfAbnormalSoundSpeed.push_back({begin, i});
+            state = 0;
+        }
+        if(state == 0 && std::abs(data[i]) > treshold) {
+            state = 1;
+            begin = i;
+            //qDebug() << begin << i;
+        }
+    }
+    return rangesOfAbnormalSoundSpeed;
+}
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
@@ -55,8 +86,10 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     QCustomPlot* plot1 = ui->plot;
     QCustomPlot* plot2 = ui->plot_2;
+    QCustomPlot* plot3 = ui->plot_3;
     initPlot(plot1);
     initPlot(plot2);
+    initPlot(plot3);
     setFixedHeight(900);
     setFixedWidth(1600);
     ui->plot->addGraph();
@@ -69,6 +102,20 @@ MainWindow::MainWindow(QWidget *parent)
     ui->plot_2->graph(0)->setPen(QPen(QColor(80, 200, 80), 3));
     ui->plot_2->graph(1)->setPen(QPen(QColor(17, 96, 242), 3));
 
+    ui->plot_3->addGraph();
+    ui->plot_3->addGraph();
+    ui->plot_3->addGraph();
+    ui->plot_3->addGraph();
+    ui->plot_3->graph(0)->setPen(QPen(QColor(102, 101, 101), 3));
+    ui->plot_3->graph(1)->setPen(QPen(QColor(17, 96, 242), 3));
+    QPen pen;
+    pen.setColor(QColor(240, 199, 50));
+    pen.setWidth(2);
+    pen.setStyle(Qt::DotLine);
+    ui->plot_3->graph(2)->setPen(pen);
+    ui->plot_3->graph(3)->setPen(pen);
+
+/********Оценка отношения скоростей газа*********/
     QVector<double> data(N, 0);
     QVector<double> t(N);
     std::iota(std::begin(t), std::end(t), 0);
@@ -94,6 +141,43 @@ MainWindow::MainWindow(QWidget *parent)
     if(estimateDataTrend(data)) output = "Наличие тренда данных";
     else output = "Отсутствие тренда данных";
     std::cout << output << std::endl;
+/**************************************************/
+
+/********Оценка скорсти звука в газе***************/
+    QVector<double> soundSpeedData(N, 0);
+    generateData(soundSpeedData, 0);
+    for(auto i = soundSpeedData.size()/2; i < soundSpeedData.size(); ++i) {
+        soundSpeedData[i] += 5;
+    }
+    for(auto i = 100; i < 200; ++i) {
+        soundSpeedData[i] -= 5;
+    }
+    auto filteredData = filter(soundSpeedData);
+    double soundSpeedTreshold = 3;
+    QVector<double> upTreshold(soundSpeedData.size(), soundSpeedTreshold);
+    QVector<double> downTreshold(soundSpeedData.size(), -soundSpeedTreshold);
+
+    auto ranges = estimateSoundSpeed(filteredData, soundSpeedTreshold);
+
+
+    ui->plot_3->graph(0)->setData(t,soundSpeedData);
+    ui->plot_3->graph(1)->setData(t,filteredData);
+    ui->plot_3->graph(2)->setData(t,upTreshold);
+    ui->plot_3->graph(3)->setData(t,downTreshold);
+
+    size_t cnt{4};
+    for(const auto& i : ranges) {
+        auto [begin , end] = i;
+        QVector<double> tmp;
+        QVector<double> x(end-begin);
+        std::iota(std::begin(x), std::end(x), begin);
+        ui->plot_3->addGraph();
+        std::copy(std::begin(filteredData)+begin, std::begin(filteredData)+end, std::back_inserter(tmp));
+        ui->plot_3->graph(cnt)->setPen(QPen(QColor(209, 63, 63), 3));
+        ui->plot_3->graph(cnt)->setData(x,tmp);
+        ++cnt;
+    }
+/**************************************************/
 }
 
 MainWindow::~MainWindow()

@@ -1,7 +1,7 @@
 QT += core gui
 QT += widgets printsupport
 
-CONFIG += c++11
+CONFIG += c++1z
 
 SOURCES += \
     main.cpp \
